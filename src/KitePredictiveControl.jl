@@ -4,7 +4,7 @@ using ModelPredictiveControl
 using PrecompileTools: @setup_workload, @compile_workload
 using KiteModels
 using ControlSystems, Serialization, OrdinaryDiffEq,
-    LinearAlgebra, Plots, Base.Threads, PreallocationTools
+    LinearAlgebra, Plots, Base.Threads, PreallocationTools, Ipopt
 using JuMP, HiGHS # solvers
 using SymbolicIndexingInterface: parameter_values, state_values
 using ModelingToolkit: variable_index as idx, unknowns
@@ -127,13 +127,13 @@ mutable struct ControlInterface
         estim = ModelPredictiveControl.UnscentedKalmanFilter(model; nint_u, σQint_u, σQ, σR)
     
         optim = JuMP.Model(HiGHS.Optimizer)
-        mpc = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Lwt, Cwt=1e5)
+        mpc = NonLinMPC(estim; Hp, Hc, Mwt, Nwt, Lwt, Cwt=1e5, optim=JuMP.Model(Ipopt.Optimizer))
         @show kite.integrator[output]
         initstate!(mpc, u0, kite.integrator[output])
         setstate!(mpc, vcat(x0, u0))
     
         du = 20.0
-        umin, umax = [-du, -du, -du], [du, du, du]
+        umin, umax = [-1.0, -1.0, -130.], [0., 0., 0.]
         # max = 0.5
         # Δumin, Δumax = [-max, -max, -max*10], [max, max, max*10]
         ymin = fill(-Inf, model.ny)
@@ -185,8 +185,9 @@ function step!(ci::ControlInterface, x, y; ry=ci.ry, rheading=nothing)
     if !isnothing(rheading)
         ci.ry[1] = rheading
     end
-    x̂ = preparestate!(ci.mpc, y .+ ci.y_noise .* randn(ci.model.ny))
-    u = moveinput!(ci.mpc, ry)
+    @time x̂ = preparestate!(ci.mpc, y .+ ci.y_noise .* randn(ci.model.ny))
+    @show x̂
+    @time u = moveinput!(ci.mpc, ry)
     # display(linearization_plot(ci, x, u))
     # setmodel!(ci.mpc, ci.model)
     pop_append!(ci.U_data, u)
