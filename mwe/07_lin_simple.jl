@@ -50,7 +50,7 @@ outputs = [
 ]
 @info "Outputs: $outputs"
 
-if !@isdefined simple_sam
+# if !@isdefined simple_sam
     set = Settings("system.yaml")
     dt = 1/set.sample_freq
     sam = SymbolicAWEModel(set, "ram")
@@ -60,7 +60,7 @@ if !@isdefined simple_sam
     tether_sam = SymbolicAWEModel(tether_set, "tether")
     simple_set = Settings("system.yaml")
     simple_sam = SymbolicAWEModel(simple_set, "simple_ram")
-end
+# end
 
 init!(sam; outputs)
 init!(plant_sam; outputs)
@@ -111,11 +111,12 @@ function generate_f_h(simple_sam)
     end
     return f!, h!, p, nu, nx, ny, vx
 end
+
 f!, h!, p, nu, nx, ny, vx = generate_f_h(simple_sam)
 vu = ["τ[1]", "τ[2]", "τ[3]"]
 vy = string.(outputs)
 Ts = 1/set.sample_freq
-solver = RungeKutta(4; supersample=10)
+solver = RungeKutta(4; supersample=100)
 model = setname!(NonLinModel(f!, h!, Ts, nu, nx, ny; p, solver); u=vu, x=vx, y=vy)
 man_estim = ManualEstimator(model; nint_u=0, nint_ym=0)
 res = ModelPredictiveControl.sim!(model, 100)
@@ -168,14 +169,13 @@ function updatestate!(plant_sam::SymbolicAWEModel, u::Vector{<:Real})
     nothing
 end
 
-if !@isdefined estim
-    estim = SAMEstim(sam, simple_sam, tether_sam)
-end
+estim = SAMEstim(sam, simple_sam, tether_sam)
 
 Hp, Hc = 10, 2
 Mwt = zeros(ny)
-Mwt[1] = 10.0
-Mwt[11] = 10.0
+Mwt[4] = 1.0
+Mwt[5] = 1.0
+Mwt[6] = 1.0
 Nwt = fill(0.01, nu)
 mpc = NonLinMPC(man_estim; Hp, Hc, Mwt, Nwt, Cwt=Inf)
 umin = fill(-100, 3)
@@ -199,6 +199,7 @@ function man_sim!(mpc, N, ry, y0, u0, x0)
         @time u = moveinput!(mpc, ry)
         U_data[:,i], Y_data[:,i], Ry_data[:,i] = u, y, ry
         # during updatestate, step with
+        @show u
         @time updatestate!(estim, u, y) # in the estim: step the complex model
         updatestate!(plant_sam, u)  # update plant simulator
     end
@@ -213,5 +214,5 @@ x0 = estim.get_x(estim.simple_sam.integrator)
 ry = copy(y0)
 ry[1] += deg2rad(10)
 u0 = sam.prob.get_set_values(sam.integrator)
-res = man_sim!(mpc, 100, ry, y0, u0, x0)
-plot(res; ploty=[1,10,11])
+res = man_sim!(mpc, 50, ry, y0, u0, x0)
+plot(res; ploty=[4,5,6])

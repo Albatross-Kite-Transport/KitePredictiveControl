@@ -2916,8 +2916,8 @@ version = "0.2.8"
 
 [[deps.SymbolicAWEModels]]
 deps = ["AtmosphericModels", "CodecZlib", "ControlSystemsBase", "DiffEqBase", "DocStringExtensions", "KiteUtils", "LaTeXStrings", "LinearAlgebra", "LinearSolve", "ModelingToolkit", "NonlinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqNonlinearSolve", "Parameters", "Pkg", "PrecompileTools", "Printf", "REPL", "RecipesBase", "Reexport", "Rotations", "SHA", "SciMLBase", "SciMLOperators", "Serialization", "StaticArrays", "Statistics", "StatsBase", "SteadyStateDiffEq", "Suppressor", "SymbolicIndexingInterface", "SymbolicUtils", "Tar", "Timers", "UnPack", "VortexStepMethod", "WinchModels"]
-git-tree-sha1 = "74b3fca5f41de12d37582592f308e1a791b0092d"
-repo-rev = "transform"
+git-tree-sha1 = "683586fbc3e9a2ebda76a2bb025fd771e320ab55"
+repo-rev = "steady-torque"
 repo-url = "https://github.com/OpenSourceAWE/SymbolicAWEModels.jl.git"
 uuid = "9c9a347c-5289-41db-a9b9-25ccc76c3360"
 version = "0.4.1"
